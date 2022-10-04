@@ -493,6 +493,16 @@ std::vector<std::vector<Vec3>> SurfaceReglee(std::vector<Vec3> bezier1, std::vec
         DrawCurve(test, test.size());
     }
 
+    std::vector<Vec3> test2;
+
+    for (int u = 0; u < nbU; u++) {
+        test2.clear();
+        test2.push_back(bezier1[u]);
+        test2.push_back(test[u]);
+        DrawCurve(test2, test2.size());
+    }
+
+    //Definir des valeurs
     return P;
 }
 
