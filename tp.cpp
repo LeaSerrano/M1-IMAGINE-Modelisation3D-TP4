@@ -476,6 +476,26 @@ std::vector<std::vector<Vec3>> CylindricSurface (std::vector<Vec3> bezier, Vec3 
     return P;
 }
 
+//TP4 Ex2
+
+//Renommer
+std::vector<std::vector<Vec3>> SurfaceReglee(std::vector<Vec3> bezier1, std::vector<Vec3> bezier2, int nbU, int nbV) {
+    std::vector<std::vector<Vec3>> P;
+    P.resize(nbU);
+
+    std::vector<Vec3> test;
+
+    for (float v = 0; v < nbV; v++) {
+        test.clear();
+        for (float u = 0; u < nbU; u++) {
+            test.push_back((1-v)*bezier1[u] + v*bezier2[u]);
+        }
+        DrawCurve(test, test.size());
+    }
+
+    return P;
+}
+
 //
 
 //Input mesh loaded at the launch of the application
@@ -657,6 +677,7 @@ void init () {
     glClearColor (0.2f, 0.2f, 0.3f, 1.0f);
     glEnable(GL_COLOR_MATERIAL);
     glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+    glMatrixMode(GL_PROJECTION);
 
     display_normals = false;
     display_mesh = true;
@@ -1013,7 +1034,6 @@ void display () {
 
     long nbUCS = 10, nbVCS = 10;
     long nbControlPointCS = TabControlPointCS.size();
-    long nbControlPointC = TabControlPointC.size();
 
     Vec3 Point0 = Vec3(0, 0, 0);
     Vec3 Point1 = Vec3(0, 0, 1);
@@ -1022,9 +1042,39 @@ void display () {
     TabStraightPoint.push_back(Point1);
 
     std::vector<Vec3> bezier = BezierCurveBernstein(TabControlPointCS, nbControlPointCS, nbUCS);
-    std::vector<std::vector<Vec3>> cylindricSurface = CylindricSurface (bezier, Point0, Point1, nbUCS, nbVCS);
+    //CylindricSurface (bezier, Point0, Point1, nbUCS, nbVCS);
 
-    //DrawSurface(cylindricSurface, nbUCS, nbVCS);
+
+    Vec3 P20 = Vec3(0, 0, 0);
+    Vec3 P21 = Vec3(0, 1, 0); 
+    Vec3 P22 = Vec3(1, 1, 0);
+    Vec3 P23 = Vec3(1, 0, 0); 
+    std::vector<Vec3> TabControlPointCS1;
+    TabControlPointCS1.push_back(P20);
+    TabControlPointCS1.push_back(P21);
+    TabControlPointCS1.push_back(P22);
+    TabControlPointCS1.push_back(P23);
+
+    Vec3 P16 = Vec3(0, 0, 1);
+    Vec3 P17 = Vec3(0, 1, 1); 
+    Vec3 P18 = Vec3(1, 1, 1);
+    Vec3 P19 = Vec3(1, 0, 1); 
+    std::vector<Vec3> TabControlPointCS2;
+    TabControlPointCS2.push_back(P16);
+    TabControlPointCS2.push_back(P17);
+    TabControlPointCS2.push_back(P18);
+    TabControlPointCS2.push_back(P19);
+
+    long nbUCS2 = 4, nbVCS2 = 4;
+
+    long nbControlPointCS2 = TabControlPointCS2.size();
+
+    std::vector<Vec3> bezier1 = BezierCurveBernstein(TabControlPointCS1, nbControlPointCS2, nbUCS2);
+    std::vector<Vec3> bezier2 = BezierCurveBernstein(TabControlPointCS2, nbControlPointCS2, nbUCS2);
+    
+    DrawCurve(bezier1, bezier1.size());
+    DrawCurve(bezier2, bezier2.size());
+    SurfaceReglee(bezier1, bezier2, nbUCS2, nbVCS2);
     
     glFlush ();
     glutSwapBuffers ();
