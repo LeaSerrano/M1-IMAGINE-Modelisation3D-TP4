@@ -342,19 +342,28 @@ std::vector<Vec3> BezierCurveBernstein(std::vector<Vec3> TabControlPoint, long n
     float t1, t2, t3;
     int cpt = 0;
 
+    //std::cout << "test1" << std::endl;
+
     for (float u = 0; u < 1; u+=(1/(float)nbU)) {
         Pu = Vec3 (0., 0., 0.);
+        //std::cout << "test2" << std::endl;
+        //for (int j = 0; j < nbU; j++) {
         for (int i = 0; i < nbControlPoint; i++) {
+            //std::cout << "test3" << std::endl;
             t1 = fact(nbControlPoint-1)/(fact(i)*fact(nbControlPoint-1-i));
             t2 = pow(u, i);
             t3 = pow((1-u), (nbControlPoint-1-i));
             Bu = t1 * t2 * t3;
             Pu += Bu*TabControlPoint[i];
+            //std::cout << "test4" << std::endl;
         }
         P[cpt] = Pu;
         cpt++;
-        Pu = Vec3 (0., 0., 0.);
+        //std::cout << j << std::endl;
+        //}
     }
+
+    P.push_back(TabControlPoint[nbControlPoint-1]);
 
     return P;
 
@@ -420,7 +429,7 @@ std::vector<Vec3> BezierCurveByCasteljau(std::vector<Vec3> TabControlPoint, long
             maxJ = nbControlPoint;
             uActuel++;
         }
-
+        
         DrawCurveByStep(Step[index], Step[index].size(), white);
     }
    
@@ -429,81 +438,112 @@ std::vector<Vec3> BezierCurveByCasteljau(std::vector<Vec3> TabControlPoint, long
 
 //TP4 Ex1
 
-void DrawSurface(std::vector<Vec3> TabPointsOfSurface, long nbPointsU) {
-    glBegin(GL_LINE_STRIP);
-    glColor3f(0.0f, 1.0f, 0.0f);
-    for (int i = 0; i < 1; i+=(1/(float)nbPointsU)) {
-        //for (int j = 0; j < 1; j+=(1/(float)nbPointsV)) {
-            glVertex3f(TabPointsOfSurface[i][0], TabPointsOfSurface[i][1], TabPointsOfSurface[i][2]);
-        //}
-    }
-    glEnd();
-}
-
 std::vector<std::vector<Vec3>> CylindricSurface (std::vector<Vec3> bezier, Vec3 P0, Vec3 P1, int nbU, int nbV) {
     std::vector<std::vector<Vec3>> P;
-    P.resize(nbU);
+    P.resize(nbU+nbV+1);
+
     std::vector<Vec3> straight;
     straight.push_back(P0);
     straight.push_back(P1);
     
-    Vec3 vecStraight = straight[1] - straight[0];
+    Vec3 straightVector = straight[1] - straight[0];
+    Vec3 lengthV = (1/(float)nbV) * straightVector;
 
-    Vec3 vecPas = (1./nbV) * vecStraight;
+    std::vector<Vec3> saveLast;
+    int cpt = 0;
 
-    std::vector<Vec3> test;
-
-    DrawCurve(straight, straight.size());
-
-    for (float v = 0; v <= nbV; v++) {
-        test.clear();
-        for (float u = 0; u < bezier.size(); u++) {
-            test.push_back((v*vecPas) + bezier[u]);
-        }
-        DrawCurve(test, test.size());
+    for (float v = 0; v < 1; v+=(1/(float)nbV)) {
+        saveLast.clear();
+        for (int u = 0; u <= nbU; u++) {
+            P[cpt].push_back((cpt*lengthV) + bezier[u]);
+            saveLast.push_back((cpt*lengthV) + bezier[u]);
+       }
+       cpt++;
     }
 
-    std::vector<Vec3> test2;
-
-    for (int u = 0; u < nbU; u++) {
-        test2.clear();
-        test2.push_back(bezier[u]);
-        test2.push_back(test[u]);
-        DrawCurve(test2, test2.size());
+    for (int u = 0; u <= nbU; u++) {
+        P[cpt].push_back(bezier[u]);
+        P[cpt].push_back(saveLast[u]);
+        cpt++;
     }
 
-    //Definir des valeurs
     return P;
 }
 
 //TP4 Ex2
 
-//Renommer
-std::vector<std::vector<Vec3>> SurfaceReglee(std::vector<Vec3> bezier1, std::vector<Vec3> bezier2, int nbU, int nbV) {
+std::vector<std::vector<Vec3>> RuledSurface(std::vector<Vec3> bezier1, std::vector<Vec3> bezier2, int nbU, int nbV) {
     std::vector<std::vector<Vec3>> P;
-    P.resize(nbU);
+    P.resize(nbU+nbV+1+bezier2.size());
 
-    std::vector<Vec3> test;
+    int cpt = 0;
 
-    for (float v = 0; v < nbV; v++) {
-        test.clear();
-        for (float u = 0; u < nbU; u++) {
-            test.push_back((1-v)*bezier1[u] + v*bezier2[u]);
-        }
-        DrawCurve(test, test.size());
+    for (float v = 0; v <= 1; v+=(1/(float)nbV)) {
+        for (int u = 0; u <= nbU; u++) {
+            P[cpt].push_back((1-v)*bezier1[u] + v*bezier2[u]);
+       }
+        cpt++;
     }
 
-    std::vector<Vec3> test2;
-
-    for (int u = 0; u < nbU; u++) {
-        test2.clear();
-        test2.push_back(bezier1[u]);
-        test2.push_back(test[u]);
-        DrawCurve(test2, test2.size());
+    for (int u = 0; u <= nbU; u++) {
+        P[cpt].push_back(bezier1[u]);
+        P[cpt].push_back(bezier2[u]);
+        cpt++;
     }
 
-    //Definir des valeurs
+    for (int i = 0; i < bezier2.size(); i++) {
+        P[cpt].push_back(bezier2[i]);
+    }
+
     return P;
+}
+
+//TP4 Ex3
+
+float BezierFloat(int nbControlPoint, float u, int i) {
+    float B;
+    float t1, t2, t3;
+    int cpt = 0;
+
+        t1 = fact(nbControlPoint-1)/(fact(i)*fact(nbControlPoint-1-i));
+        t2 = pow(u, i);
+        t3 = pow((1-u), (nbControlPoint-1-i));
+        B = t1 * t2 * t3;
+
+    return B;
+}
+
+std::vector<std::vector<Vec3>> BezierSurfaceByBernstein(std::vector<std::vector<Vec3>> GrilleControlPoint, long nbControlPointU, long nbControlPointV,long nbU, long nbV) {
+    std::vector<std::vector<Vec3>> P;
+    P.resize(nbControlPointV+nbU+nbControlPointU+nbV);
+    std::vector<std::vector<Vec3>> aCompleter;
+
+     std::vector<Vec3> test;
+     test.resize(nbControlPointV+nbControlPointU);
+     Vec3 sommePtU0 = Vec3(0, 0, 0);
+     int cpt = 0;
+
+    float bezierfloat = 0; 
+    Vec3 Pt;
+
+    for (float u = 0; u <= 1; u+=(1/(float)nbU)) {
+        for (float v = 0; v <= 1; v+=(1/(float)nbV)) {
+            Pt = Vec3(0, 0, 0);
+            for (int j = 0; j < nbControlPointV; j++) {   
+                
+                for (int i = 0; i < nbControlPointU; i++) {
+                    Pt += BezierFloat(nbControlPointU, u, i)*BezierFloat(nbControlPointV, v, j)*GrilleControlPoint[j][i];
+                }
+                
+            }
+            P[cpt].push_back(Pt);
+            
+        }
+        DrawCurveByStep(P[cpt], P[cpt].size(), Vec3(1, 0, 0));
+        cpt++;
+    }
+
+    return aCompleter;
 }
 
 //
@@ -928,13 +968,13 @@ void display () {
     DrawCurve(hermiteCubicCurve, nbPoints);*/
 
     //Tracé des points utilisés
-    glBegin(GL_POINTS);
+    /*glBegin(GL_POINTS);
     glColor3f(1.0, 0.0, 0.0);
     glVertex3f(P0[0], P0[1], P0[2]);
     glVertex3f(P1[0], P1[1], P1[2]);
     glVertex3f(V0[0], V0[1], V1[2]);
     glVertex3f(V1[0], V1[1], V1[2]);
-    glEnd();
+    glEnd();*/
 
 
     //Bernstein
@@ -965,13 +1005,13 @@ void display () {
     DrawCurve(bezierCurveBernstein, nbUB);*/
 
     //Exemple 1 tracé de points :
-    glBegin(GL_POINTS);
+    /*glBegin(GL_POINTS);
     glColor3f(1.0, 0.0, 0.0);
     glVertex3f(P2[0], P2[1], P2[2]);
     glVertex3f(P3[0], P3[1], P3[2]);
     glVertex3f(P4[0], P4[1], P4[2]);
     glVertex3f(P5[0], P5[1], P5[2]);
-    glEnd();
+    glEnd();*/
 
     //Exemple 2 tracé de points :
     /*glBegin(GL_POINTS);
@@ -1017,13 +1057,13 @@ void display () {
     DrawCurve(bezierCurveByCasteljau, nbUC);*/
 
     //Exemple 1 tracé de points :
-    glBegin(GL_POINTS);
+    /*glBegin(GL_POINTS);
     glColor3f(1.0, 0.0, 0.0);
     glVertex3f(P6[0], P6[1], P6[2]);
     glVertex3f(P7[0], P7[1], P7[2]);
     glVertex3f(P8[0], P8[1], P8[2]);
     glVertex3f(P9[0], P9[1], P9[2]);
-    glEnd();    
+    glEnd();*/    
 
     //Exemple 2 tracé de points :
     /*glBegin(GL_POINTS);
@@ -1036,13 +1076,38 @@ void display () {
     glVertex3f(P15[0], P15[1], P15[2]);
     glEnd();*/  
 
-    std::vector<Vec3> TabControlPointCS;
-    TabControlPointCS.push_back(P6);
-    TabControlPointCS.push_back(P7);
-    TabControlPointCS.push_back(P8);
-    TabControlPointCS.push_back(P9);
+    Vec3 P24 = Vec3(0.70, 0.55, 0);
+    Vec3 P25 = Vec3(1, 0, 0); 
+    Vec3 P26 = Vec3(0.80, -0.55, 0);
 
-    long nbUCS = 10, nbVCS = 10;
+    Vec3 P27 = Vec3(0.55, -0.80, 0); 
+    Vec3 P28 = Vec3(0, -1, 0);
+    Vec3 P29 = Vec3(-0.55, -0.80, 0); 
+
+    Vec3 P30 = Vec3(-0.80, -0.55, 0); 
+    Vec3 P31 = Vec3(-1, 0, 0);
+    Vec3 P32 = Vec3(-0.80, 0.55, 0); 
+
+    Vec3 P33 = Vec3(-0.55, 0.80, 0); 
+    Vec3 P34 = Vec3(0, 1, 0);
+    Vec3 P35 = Vec3(0.55, 0.80, 0); 
+
+    std::vector<Vec3> TabControlPointCS;
+    TabControlPointCS.push_back(P24);
+    TabControlPointCS.push_back(P25);
+    TabControlPointCS.push_back(P26);
+    TabControlPointCS.push_back(P26);
+    TabControlPointCS.push_back(P28);
+    TabControlPointCS.push_back(P29);
+    TabControlPointCS.push_back(P30);
+    TabControlPointCS.push_back(P31);
+    TabControlPointCS.push_back(P32);
+    TabControlPointCS.push_back(P33);
+    TabControlPointCS.push_back(P34);
+    TabControlPointCS.push_back(P35);
+    TabControlPointCS.push_back(P24);
+
+    long nbUCS = 30, nbVCS = 30;
     long nbControlPointCS = TabControlPointCS.size();
 
     Vec3 Point0 = Vec3(0, 0, 0);
@@ -1051,40 +1116,117 @@ void display () {
     TabStraightPoint.push_back(Point0);
     TabStraightPoint.push_back(Point1);
 
-    std::vector<Vec3> bezier = BezierCurveBernstein(TabControlPointCS, nbControlPointCS, nbUCS);
-    //CylindricSurface (bezier, Point0, Point1, nbUCS, nbVCS);
+    /*std::vector<Vec3> bezier = BezierCurveBernstein(TabControlPointCS, nbControlPointCS, nbUCS);
+    std::vector<std::vector<Vec3>> P = CylindricSurface (bezier, Point0, Point1, nbUCS, nbVCS);
+
+    for (int i = 0; i < P.size(); i++) {
+        DrawCurve(P[i], P[i].size());
+    }*/
 
 
     Vec3 P20 = Vec3(0, 0, 0);
-    Vec3 P21 = Vec3(0, 1, 0); 
-    Vec3 P22 = Vec3(1, 1, 0);
-    Vec3 P23 = Vec3(1, 0, 0); 
+    Vec3 P21 = Vec3(0, 0.5, 0); 
+    Vec3 P22 = Vec3(0.5, 0.5, 0);
+    Vec3 P23 = Vec3(0.5, 0, 0); 
     std::vector<Vec3> TabControlPointCS1;
     TabControlPointCS1.push_back(P20);
     TabControlPointCS1.push_back(P21);
     TabControlPointCS1.push_back(P22);
     TabControlPointCS1.push_back(P23);
 
-    Vec3 P16 = Vec3(0, 0, 1);
-    Vec3 P17 = Vec3(0, 1, 1); 
-    Vec3 P18 = Vec3(1, 1, 1);
-    Vec3 P19 = Vec3(1, 0, 1); 
+    Vec3 P16 = Vec3(0, 0.5, 0.5);
+    Vec3 P17 = Vec3(0, 0, 0.5); 
+    Vec3 P18 = Vec3(0.5, 0, 0.5);
+    Vec3 P19 = Vec3(0.5, 0.5, 0.5); 
     std::vector<Vec3> TabControlPointCS2;
     TabControlPointCS2.push_back(P16);
     TabControlPointCS2.push_back(P17);
     TabControlPointCS2.push_back(P18);
     TabControlPointCS2.push_back(P19);
 
-    long nbUCS2 = 4, nbVCS2 = 4;
+    long nbUCS2 = 18, nbVCS2 = 19;
 
     long nbControlPointCS2 = TabControlPointCS2.size();
 
     std::vector<Vec3> bezier1 = BezierCurveBernstein(TabControlPointCS1, nbControlPointCS2, nbUCS2);
-    std::vector<Vec3> bezier2 = BezierCurveBernstein(TabControlPointCS2, nbControlPointCS2, nbUCS2);
-    
     DrawCurve(bezier1, bezier1.size());
-    DrawCurve(bezier2, bezier2.size());
-    SurfaceReglee(bezier1, bezier2, nbUCS2, nbVCS2);
+    //std::vector<Vec3> bezier2 = BezierCurveBernstein(TabControlPointCS2, nbControlPointCS2, nbUCS2);
+    
+    /*std::vector<std::vector<Vec3>> P = RuledSurface(bezier1, bezier2, nbUCS2, nbVCS2);
+
+    for (int i = 0; i < P.size(); i++) {
+        DrawCurve(P[i], P[i].size());
+    }*/
+
+    std::vector<Vec3> TabControlPointBSB0;
+    std::vector<Vec3> TabControlPointBSB1;
+    std::vector<Vec3> TabControlPointBSB2;
+    std::vector<Vec3> TabControlPointBSB3;
+    std::vector<std::vector<Vec3>> TabControlPointBSB;
+
+    Vec3 P36 = Vec3(0, 0, 0);
+    Vec3 P37 = Vec3(0, 0.5, 0);
+    Vec3 P38 = Vec3(0.5, 0.5, 0);
+    Vec3 P39 = Vec3(0.5, 0, 0);
+
+    Vec3 P40 = Vec3(0, 0.10, 0.25);
+    Vec3 P41 = Vec3(0, 0.60, 0.25);
+    Vec3 P42 = Vec3(0.5, 0.60, 0.25);
+    Vec3 P43 = Vec3(0.5, 0.10, 0.25);
+
+    Vec3 P44 = Vec3(0, 0.10, 0.5);
+    Vec3 P45 = Vec3(0, 0.60, 0.5);
+    Vec3 P46 = Vec3(0.5, 0.60, 0.5);
+    Vec3 P47 = Vec3(0.5, 0.10, 0.5);
+
+    Vec3 P48 = Vec3(0, 0, 0.75);
+    Vec3 P49 = Vec3(0, 0.5, 0.75);
+    Vec3 P50 = Vec3(0.5, 0.5, 0.75);
+    Vec3 P51 = Vec3(0.5, 0, 0.75);
+
+    TabControlPointBSB0.push_back(P36);
+    TabControlPointBSB0.push_back(P37);
+    TabControlPointBSB0.push_back(P38);
+    TabControlPointBSB0.push_back(P39);
+
+    TabControlPointBSB1.push_back(P40);
+    TabControlPointBSB1.push_back(P41);
+    TabControlPointBSB1.push_back(P42);
+    TabControlPointBSB1.push_back(P43);
+
+    TabControlPointBSB2.push_back(P44);
+    TabControlPointBSB2.push_back(P45);
+    TabControlPointBSB2.push_back(P46);
+    TabControlPointBSB2.push_back(P47);
+
+    TabControlPointBSB3.push_back(P48);
+    TabControlPointBSB3.push_back(P49);
+    TabControlPointBSB3.push_back(P50);
+    TabControlPointBSB3.push_back(P51);
+
+    /*std::vector<Vec3> bezier3 = BezierCurveBernstein(TabControlPointBSB0, TabControlPointBSB0.size(), 4);
+    DrawCurve(bezier3, bezier3.size());
+
+    std::vector<Vec3> bezier4 = BezierCurveBernstein(TabControlPointBSB1, TabControlPointBSB1.size(), 4);
+    DrawCurve(bezier4, bezier4.size());
+
+    std::vector<Vec3> bezier5 = BezierCurveBernstein(TabControlPointBSB2, TabControlPointBSB2.size(), 4);
+    DrawCurve(bezier5, bezier5.size());
+
+    std::vector<Vec3> bezier6 = BezierCurveBernstein(TabControlPointBSB3, TabControlPointBSB3.size(), 4);
+    DrawCurve(bezier6, bezier6.size());*/
+
+    TabControlPointBSB.push_back(TabControlPointBSB0);
+    TabControlPointBSB.push_back(TabControlPointBSB1);
+    TabControlPointBSB.push_back(TabControlPointBSB2);
+    TabControlPointBSB.push_back(TabControlPointBSB3);
+
+    long nbControlPointU = 4;
+    long nbControlPointV = 4;
+    long nbUBSB = 40;
+    long nbVBSB = 40;
+
+    //BezierSurfaceByBernstein(TabControlPointBSB, nbControlPointU, nbControlPointV, nbUBSB, nbVBSB);
     
     glFlush ();
     glutSwapBuffers ();
